@@ -1,147 +1,183 @@
 <!DOCTYPE html>
 
 <html lang="en">
-<head>
-<meta charset="utf-8"/>
-<title>Template Three.js app</title>
-<style>
+  <head>
+    <meta charset="utf-8" />
+    <title>Template Three.js app</title>
+    <style>
       /* feel free to style the canvas any way you want. If you want it to
       use the entire window, set width: 100% and height: 100%. */
-      
+
       canvas {
-          display: block;
-          margin: 10px auto;
-          width: 80%;
-          height: 500px;
+        display: block;
+        margin: 10px auto;
+        width: 80%;
+        height: 500px;
       }
     </style>
-<script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
-"https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
-</script>
-<!-- omit dat.gui and OrbitControls if you don't need them -->
-<script src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js">
-"https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r80.js"
-</script>
-<script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
-"https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r80.min.js"
-</script>
-<script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
-"https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
-</script>
-</head>
-<body>
-<h1>Template Three.js Application</h1>
-<p>This file has the minimal code to create a working Three.js
-  application, using the TW object to set up the camera for us.  Because
-  the canvas does not take the entire window, there is space for some
-  ordinary HTML like this. This is a good place to describe your program
-  for a user. I suggest saving this to your local machine using
-    "HTML only" (rather than "Web Page Complete"), so that it includes
-    the URLs.
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+    <!-- omit dat.gui and OrbitControls if you don't need them -->
+    <script
+      src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js"
+    >
+      "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r80.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r80.min.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+    </script>
+  </head>
+  <body>
+    <h1>Obelisk Project 1</h1>
+    <script>
+      // We always need a scene.
+      var scene = new THREE.Scene();
 
-<script>
-// We always need a scene.
-var scene = new THREE.Scene();
+      // ====================================================================
+      const default_dims = {
+        base: 55.0,
+        height: 500.0,
+        top_height: 55.0,
+        top_base: 34.0,
+      };
 
-// ====================================================================
-const default_dims = {
-  base: 55.0,
-  height: 500.0,
-  top_height: 55.0,
-  top_base: 34.0
-};
+      function createObeliskMesh(barnGeometry, barnColor) {
+        var barnMaterial = new THREE.MeshBasicMaterial({ color: barnColor });
+        // create and return a Mesh using the barnGeometry and barnMaterial
+        return new THREE.Mesh(barnGeometry, barnMaterial);
+      }
 
-function createObeliskMesh (barnGeometry, barnColor) {
-    var barnMaterial = new THREE.MeshBasicMaterial( {color: barnColor} );
-    // create and return a Mesh using the barnGeometry and barnMaterial
-    return new THREE.Mesh( barnGeometry, barnMaterial );
-}
+      const obelisk = (dims) => {
+        var geom = new THREE.Geometry();
+        // first face
+        geom.vertices.push(
+          new THREE.Vector3((-1.0 * dims.base) / 2.0, 0, dims.base / 2.0)
+        );
+        geom.vertices.push(
+          new THREE.Vector3(dims.base / 2.0, 0, dims.base / 2.0)
+        );
+        geom.vertices.push(
+          new THREE.Vector3(
+            dims.top_base / 2.0,
+            dims.height,
+            dims.top_base / 2.0
+          )
+        );
+        geom.vertices.push(
+          new THREE.Vector3(
+            (-1.0 * dims.top_base) / 2.0,
+            dims.height,
+            dims.top_base / 2.0
+          )
+        );
+        // top!
+        geom.vertices.push(
+          new THREE.Vector3(0, dims.top_height + dims.height, 0)
+        );
 
-const obelisk = (dims) => {
-  var geom = new THREE.Geometry();
-  // first face
-  geom.vertices.push(new THREE.Vector3(-1.0 * dims.base / 2.0 , 0, dims.base / 2.0));
-  geom.vertices.push(new THREE.Vector3(dims.base / 2.0 , 0, dims.base / 2.0));
-  geom.vertices.push(new THREE.Vector3(dims.top_base / 2.0 , dims.height, dims.top_base / 2.0));
-  geom.vertices.push(new THREE.Vector3(-1.0 *dims.top_base / 2.0 , dims.height, dims.top_base / 2.0));
-  // top!
-  geom.vertices.push(new THREE.Vector3(0 , dims.top_height + dims.height, 0));
+        // second side
+        geom.vertices.push(
+          new THREE.Vector3(dims.base / 2.0, 0, (-1.0 * dims.base) / 2.0)
+        );
+        geom.vertices.push(
+          new THREE.Vector3(
+            dims.top_base / 2.0,
+            dims.height,
+            (-1.0 * dims.top_base) / 2.0
+          )
+        );
 
-  // second side
-  geom.vertices.push(new THREE.Vector3(dims.base / 2.0 , 0, -1.0 * dims.base / 2.0));
-  geom.vertices.push(new THREE.Vector3(dims.top_base / 2.0 , dims.height, -1.0 * dims.top_base / 2.0));
+        // third side
+        geom.vertices.push(
+          new THREE.Vector3(-dims.base / 2.0, 0, (-1.0 * dims.base) / 2.0)
+        );
+        geom.vertices.push(
+          new THREE.Vector3(
+            -dims.top_base / 2.0,
+            dims.height,
+            (-1.0 * dims.top_base) / 2.0
+          )
+        );
 
-  // third side
-  geom.vertices.push(new THREE.Vector3(-dims.base / 2.0 , 0, -1.0 * dims.base / 2.0));
-  geom.vertices.push(new THREE.Vector3(-dims.top_base / 2.0 , dims.height, -1.0 * dims.top_base / 2.0));
+        // front face
+        geom.faces.push(new THREE.Face3(0, 1, 2));
+        geom.faces.push(new THREE.Face3(0, 2, 3));
+        geom.faces.push(new THREE.Face3(3, 2, 4));
 
-  // front face
-  geom.faces.push(new THREE.Face3(0, 1, 2));
-  geom.faces.push(new THREE.Face3(0, 2, 3));
-  geom.faces.push(new THREE.Face3(3, 2, 4));
+        // right face
+        geom.faces.push(new THREE.Face3(1, 5, 6));
+        geom.faces.push(new THREE.Face3(1, 6, 2));
+        geom.faces.push(new THREE.Face3(2, 6, 4));
+        // back face
+        geom.faces.push(new THREE.Face3(5, 7, 8));
+        geom.faces.push(new THREE.Face3(5, 8, 6));
 
-  // right face
-  geom.faces.push(new THREE.Face3(1, 5, 6));
-  geom.faces.push(new THREE.Face3(1, 6, 2));
-  geom.faces.push(new THREE.Face3(2, 6, 4));
-  // back face
-  geom.faces.push(new THREE.Face3(5, 7, 8));
-  geom.faces.push(new THREE.Face3(5, 8, 6));
+        geom.faces.push(new THREE.Face3(6, 8, 4));
+        // left face
+        geom.faces.push(new THREE.Face3(7, 0, 3));
+        geom.faces.push(new THREE.Face3(7, 3, 8));
+        geom.faces.push(new THREE.Face3(8, 3, 4));
 
-  geom.faces.push(new THREE.Face3(6, 8, 4));
-  // left face
-  geom.faces.push(new THREE.Face3(7, 0, 3));
-  geom.faces.push(new THREE.Face3(7, 3, 8));
-  geom.faces.push(new THREE.Face3(8, 3, 4));
-  
-  const colors = geom.faces.map((face, idx) => {
-    face.materialIndex = idx;
-    // set first 2 faces to be rgb colors as required by assignment
-    if (idx === 0) return new THREE.MeshBasicMaterial({ color: new THREE.Color("rgb(143, 236, 255)")})  // sky blue
-    if (idx === 1) return new THREE.MeshBasicMaterial({ color: new THREE.Color("rgb(162, 143, 255)")})  // periwinkle
-    return new THREE.MeshBasicMaterial( {color: TW.randomColor()} )
-  });
-  ob = new THREE.Mesh(geom, colors);
-  scene.add(ob);
-};
+        const colors = geom.faces.map((face, idx) => {
+          face.materialIndex = idx;
+          // set first 2 faces to be rgb colors as required by assignment
+          if (idx === 0)
+            return new THREE.MeshBasicMaterial({
+              color: new THREE.Color("rgb(143, 236, 255)"),
+            }); // sky blue
+          if (idx === 1)
+            return new THREE.MeshBasicMaterial({
+              color: new THREE.Color("rgb(162, 143, 255)"),
+            }); // periwinkle
+          return new THREE.MeshBasicMaterial({ color: TW.randomColor() });
+        });
+        ob = new THREE.Mesh(geom, colors);
+        scene.add(ob);
+      };
 
-obelisk(default_dims);
+      obelisk(default_dims);
 
-// ================================================================
-// 
-// We always need a renderer
+      // ================================================================
+      //
+      // We always need a renderer
 
-var renderer = new THREE.WebGLRenderer();
+      var renderer = new THREE.WebGLRenderer();
 
-TW.mainInit(renderer,scene);
+      TW.mainInit(renderer, scene);
 
-/* We always need a camera; here we'll use a default orbiting camera.  The
+      /* We always need a camera; here we'll use a default orbiting camera.  The
 third argument are the ranges for the coordinates, to help with setting up
 the placement of the camera. They need not be perfectly accurate, but if
 they are way off, your camera might not see anything, and you'll get a
 blank canvas. */
 
-TW.cameraSetup(renderer,
-               scene,
-               {minx: -60, maxx: 60,
-                miny: -3, maxy: 700,
-                minz: -60, maxz: 60});
+      TW.cameraSetup(renderer, scene, {
+        minx: -60,
+        maxx: 60,
+        miny: -3,
+        maxy: 700,
+        minz: -60,
+        maxz: 60,
+      });
 
-// GUI tools
-// redrawObelisk() is a callback function that redraws the object with the new dimensions
-function redrawObelisk() {
-    scene.remove(ob);
-    obelisk(default_dims);
-    TW.render();
-}
+      // GUI tools
+      // redrawObelisk() is a callback function that redraws the object with the new dimensions
+      function redrawObelisk() {
+        scene.remove(ob);
+        obelisk(default_dims);
+        TW.render();
+      }
 
-// set up sliders to control the dimensions of the box
-var gui = new dat.GUI();
-gui.add(default_dims, 'base', 10, 80).onChange(redrawObelisk);
-gui.add(default_dims, 'height', 20, 600).onChange(redrawObelisk);
-gui.add(default_dims, 'top_base', 5, 60).onChange(redrawObelisk);
-gui.add(default_dims, 'top_height', 10, 80).onChange(redrawObelisk);
-
-</script>
-</p></body>
+      // set up sliders to control the dimensions of the box
+      var gui = new dat.GUI();
+      gui.add(default_dims, "base", 10, 80).onChange(redrawObelisk);
+      gui.add(default_dims, "height", 20, 600).onChange(redrawObelisk);
+      gui.add(default_dims, "top_base", 5, 60).onChange(redrawObelisk);
+      gui.add(default_dims, "top_height", 10, 80).onChange(redrawObelisk);
+    </script>
+  </body>
 </html>
