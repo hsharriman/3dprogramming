@@ -1,0 +1,369 @@
+<html>
+  <head>
+    <title>The Clown</title>
+    <style>
+      body {
+        margin: 0px;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cs.wellesley.edu/~cs307/307.css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cs.wellesley.edu/~cs307/js/google-code-prettify/prettify-sda.css"
+    />
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+    <!-- omit dat.gui and OrbitControls if you don't need them -->
+    <script
+      src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js"
+    >
+      "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r80.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r80.min.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+    </script>
+  </head>
+  <body>
+    <h1>Clown</h1>
+
+    <script>
+      // "globals"
+      var default_params = {
+        legLength: 5,
+        legRadius: 0.5,
+        tummyRadius: 5,
+        tummyHeight: 5,
+        tummyScaleY: 1.4,
+        hipWidth: 3,
+        headR: 3,
+        originR: 0.5,
+        eyeRadius: 0.3,
+        hipLength: 2,
+        armLength: 7,
+        shoulderWidth: 3.5,
+        shoulderR: 2,
+        handR: 1.2,
+        armWidth: 0.5,
+        footR: 1.5,
+        hatH: 3,
+        hatR: 2.8,
+        brimR: 3.25,
+        brimTube: 0.6,
+        mouthR: 1,
+        mouthTube: 0.1,
+        arc: Math.PI / 3,
+      };
+
+      const GEOMETRY_DETAIL = 20;
+
+      const CLRS = {
+        pnk: 0xff8cbe,
+        lightblue: 0x4287f5,
+        mint: 0x42ecf5,
+        gray: 0x525252,
+        yellow: 0xfce303,
+        green: 0x44eb70,
+      };
+
+      // ================================================================
+      // helper functions
+      const addSphere = (
+        parent,
+        radius,
+        height,
+        clr,
+        thetaStart = 0,
+        thetaLength = 2 * Math.PI
+      ) => {
+        var geom = new THREE.SphereGeometry(
+          radius, // radius
+          GEOMETRY_DETAIL, // widthsegments
+          GEOMETRY_DETAIL, // heightsegments,
+          0, // phistart
+          2 * Math.PI, // philength,
+          thetaStart,
+          thetaLength
+        );
+        var mesh = new THREE.Mesh(
+          geom,
+          new THREE.MeshBasicMaterial({ color: clr })
+        );
+        mesh.position.y = height;
+        console.log(height, parent, radius);
+        parent.add(mesh);
+        return mesh;
+      };
+
+      const addTorus = (parent, radius, tube, arc, clr) => {
+        var geom = new THREE.TorusGeometry(
+          radius,
+          tube,
+          GEOMETRY_DETAIL,
+          GEOMETRY_DETAIL,
+          arc
+        );
+        var mesh = new THREE.Mesh(
+          geom,
+          new THREE.MeshBasicMaterial({ color: clr })
+        );
+        parent.add(mesh);
+        return mesh;
+      };
+
+      // ================================================================
+      // builder functions
+      const createEye = (params) => {
+        // modified from teddy bear exercise
+        var sd = params.sphereDetail || 10;
+        var radius = params.eyeRadius || 0.3;
+        var eyeGeometry = new THREE.SphereGeometry(radius, sd, sd);
+        var eyeMesh = new THREE.Mesh(
+          eyeGeometry,
+          new THREE.MeshBasicMaterial({ color: CLRS.gray })
+        );
+        return eyeMesh;
+      };
+
+      const addEye = (head, params, side) => {
+        // modified from Teddy bear exercise
+        /* adds an eye to the head on the right (side=1) or left
+         * (side=-1). The center of the eye is flush with the surface of the
+         * head by moving it out along the z axis by the radius, and rotating
+         * it around the x and then y axes to get it to the desired height. */
+        var eyeframe = new THREE.Object3D();
+        var eye = createEye(params);
+        var radius = params.headR || 2;
+        eye.position.z = radius; // within the eyeframe
+        eyeframe.rotation.x = -Math.PI / 12;
+        eyeframe.rotation.y = (side * Math.PI) / 6;
+        eyeframe.add(eye);
+        head.add(eyeframe);
+        return head;
+      };
+
+      const addLeg = (parent, params, side, clr) => {
+        /* adds a leg to the clown on the right (side=1) or left (side=-1). */
+        var leg = createLimb(
+          params.legRadius,
+          params.legLength + params.hipLength,
+          params,
+          clr
+        );
+        var hx = side * params.hipWidth;
+        leg.position.set(hx, 0, 0);
+        let foot = addSphere(leg, params.footR, 0, CLRS.green, 0, 1.8);
+        // foot.position.set(hx, 0, 0);
+        parent.add(leg);
+      };
+
+      const createArm = (params, clr) => {
+        /* returns an Object with the center at the shoulder and the negative
+         * Y axis running down the center. */
+        var arm = createLimb(
+          params.armWidth,
+          params.armLength,
+          params,
+          clr,
+          -1
+        );
+        // create shoulder
+        addSphere(arm, params.shoulderR, 0, CLRS.pnk);
+        // create hand
+        addSphere(arm, params.handR, -params.armLength, CLRS.green);
+        return arm;
+      };
+
+      const addArm = (parent, params, side, height, clr) => {
+        /* adds an arm to the bear on the right (side=1) or left (side=-1). */
+        var arm = createArm(params, clr);
+        var radius = params.tummyRadius;
+        var scale = params.tummyScaleY;
+        var sx = params.shoulderWidth;
+        var sy = height;
+        arm.position.set(side * sx, sy, 0);
+        arm.rotation.z = (side * Math.PI) / 4;
+        parent.add(arm);
+      };
+
+      const addEar = (parent, params, side, clr) => {
+        /* adds an ear to the bear on the right (side=1) or left (side=-1). */
+        var ear = addSphere(parent, params.earR, 0, clr);
+        ear.position.set(side * params.headR, 0, 0);
+      };
+
+      const addNose = (parent, params, clr) => {
+        /* adds a nose to the center of the face. */
+        var nose = addSphere(parent, params.eyeRadius, 0, clr);
+        nose.position.set(0, 0, params.headR);
+        nose.rotation.z = Math.PI / 2;
+      };
+
+      const addMouth = (parent, params, clr) => {
+        var mouth = addTorus(
+          parent,
+          params.mouthR,
+          params.mouthTube,
+          params.arc,
+          clr
+        );
+        mouth.position.set(0, 0, params.headR);
+        mouth.rotation.z = (3 * Math.PI) / 2; // spin 3pi/2 rad around the nose
+      };
+
+      const createLimb = (radius, length, params, clr, dir = 1) => {
+        /* returns an Object with the center at the bottom (if dir = 1) or at the top (if dir = -1) and the negative Y
+         * axis running down the center. */
+        var limb = new THREE.Object3D();
+        var cd = params.cylinderDetail || 10;
+        var limbGeom = new THREE.CylinderGeometry(radius, radius, length, cd);
+        var limbMesh = new THREE.Mesh(
+          limbGeom,
+          new THREE.MeshBasicMaterial({ color: clr })
+        );
+        limbMesh.position.y = (dir * length) / 2;
+        limb.add(limbMesh);
+        return limb;
+      };
+
+      const addHat = (parent, params, height, clr) => {
+        var hat = new THREE.Object3D();
+        hat.position.y = height;
+        // make cylinder
+        var cd = params.cylinderDetail || 10;
+        var topgeom = new THREE.CylinderGeometry(
+          params.hatR,
+          params.hatR,
+          params.hatH,
+          cd
+        );
+        var topmesh = new THREE.Mesh(
+          topgeom,
+          new THREE.MeshBasicMaterial({ color: clr })
+        );
+        topmesh.position.y = params.hatH / 2;
+        hat.add(topmesh);
+
+        // add brim
+        var brimContainer = new THREE.Object3D();
+        brimContainer.rotation.x = Math.PI / 2;
+        brimContainer.position.set(0, params.brimTube, 0);
+        let brim = addTorus(
+          brimContainer,
+          params.brimR,
+          params.brimTube,
+          Math.PI * 2,
+          clr
+        );
+        hat.add(brimContainer);
+        hat.rotation.x = -Math.PI / 8;
+
+        parent.add(hat);
+      };
+
+      // MAIN FUNCTION TO BUILD THE CLOWN
+      const makeClown = (params) => {
+        let clownContainer = new THREE.Object3D();
+        // clownContainer.position.y = 5;
+        let y = params.legLength + params.tummyRadius * params.tummyScaleY;
+
+        // create the body
+        let tummy = addSphere(
+          clownContainer,
+          params.tummyRadius,
+          y,
+          CLRS.lightblue
+        );
+        tummy.scale.y = params.tummyScaleY;
+        y += params.tummyRadius * params.tummyScaleY;
+
+        // create the arms
+        addArm(clownContainer, params, 1, y - params.shoulderR, CLRS.lightblue);
+        addArm(
+          clownContainer,
+          params,
+          -1,
+          y - params.shoulderR,
+          CLRS.lightblue
+        );
+        // create the head
+        y += params.headR * 0.65;
+        const head = addSphere(clownContainer, params.headR, y, CLRS.mint);
+
+        // create the eyes
+        addEye(head, params, 1);
+        addEye(head, params, -1);
+
+        // add ears
+        addEar(head, params, 1, CLRS.gray);
+        addEar(head, params, -1, CLRS.gray);
+
+        // add nose
+        addNose(head, params, CLRS.gray);
+
+        // create the smile
+        addMouth(head, params, CLRS.pnk);
+
+        // create the hat and brim
+        y += params.headR * 0.35;
+        addHat(clownContainer, params, y, CLRS.lightblue);
+
+        // add the legs
+        addLeg(clownContainer, params, 1, CLRS.pnk);
+        addLeg(clownContainer, params, -1, CLRS.pnk);
+
+        // add the yellow dot at clown origin
+        addSphere(clownContainer, params.originR, 0, CLRS.yellow);
+
+        return clownContainer;
+      };
+
+      var scene = new THREE.Scene();
+      var clown = makeClown(default_params);
+      scene.add(clown);
+
+      var renderer = new THREE.WebGLRenderer();
+
+      TW.mainInit(renderer, scene);
+
+      var state = TW.cameraSetup(renderer, scene, {
+        minx: -10,
+        maxx: 10,
+        miny: -20,
+        maxy: 25,
+        minz: -15,
+        maxz: 15,
+      });
+      TW.toggleAxes("show");
+
+      // ================================================================
+      function rebuild() {
+        scene.remove(clown);
+        clown = makeClown(default_params);
+        scene.add(clown);
+        state.render();
+      }
+
+      // set up sliders to control the dimensions of the box
+      var gui = new dat.GUI();
+      gui.add(default_params, "legLength", 2, 8).onChange(rebuild);
+      gui.add(default_params, "tummyRadius", 2, 10).onChange(rebuild);
+      gui.add(default_params, "shoulderR", 1, 4).onChange(rebuild);
+      gui.add(default_params, "headR", 2, 10).onChange(rebuild);
+      gui.add(default_params, "hatH", 3, 8).onChange(rebuild);
+      // ================================================================
+    </script>
+  </body>
+</html>
