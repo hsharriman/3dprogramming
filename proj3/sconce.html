@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<!-- saved from url=(0064)https://cs.wellesley.edu/~cs307/assigns-s21/sconce-solution.html -->
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252" />
+    <title>Sconce</title>
+    <style>
+      canvas {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body data-new-gr-c-s-check-loaded="14.1031.0" data-gr-ext-installed="">
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+    <script
+      src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js"
+    >
+      "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r80.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js">
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r80.min.js"
+    </script>
+
+    <script>
+      function makeCone(height, angle, coneColor) {
+        var parent = new THREE.Object3D();
+        var rb = height * Math.tan(TW.degrees2radians(angle));
+        var coneGeom = new THREE.CylinderGeometry(0, rb, height, 30, 1, true);
+        var coneMat = new THREE.MeshPhongMaterial({
+          color: coneColor,
+          side: THREE.DoubleSide,
+        });
+        var cone = new THREE.Mesh(coneGeom, coneMat);
+        cone.position.y = -height / 2;
+        parent.add(cone);
+        return parent;
+      }
+      function spotlight(angle) {
+        var rads = TW.degrees2radians(angle);
+        var spot = new THREE.SpotLight(0xffffff, 1, 0, rads);
+        spot.intensity = 1.5;
+        return spot;
+      }
+      function spotlightPlaceAndAim(spot, pos, dir) {
+        spot.position.copy(pos);
+        spot.target.position.set(pos.x + dir.x, pos.y + dir.y, pos.z + dir.z);
+      }
+      function makeSconce(scene, height, angle, coneColor, position, name) {
+        var cone1 = makeCone(height, angle, coneColor);
+        cone1.position.copy(position);
+        cone1.name = name + " down cone";
+        scene.add(cone1);
+        var spot1 = spotlight(angle);
+        spotlightPlaceAndAim(spot1, position, new THREE.Vector3(0, -1, 0));
+        spot1.name = name + " down spot";
+        scene.add(spot1);
+        scene.add(spot1.target);
+        var cone2 = makeCone(height, angle, coneColor);
+        cone2.position.copy(position);
+        cone2.name = name + " up cone";
+        cone2.rotation.x = Math.PI;
+        scene.add(cone2);
+        var spot2 = spotlight(angle);
+        spotlightPlaceAndAim(spot2, position, new THREE.Vector3(0, 1, 0));
+        spot2.name = name + " up spot";
+        scene.add(spot2);
+        scene.add(spot2.target);
+      }
+      function makeBall(radius, color, floorPosition) {
+        var sphereGeometry = new THREE.SphereGeometry(radius, 50, 50);
+        var sphereMaterial = new THREE.MeshPhongMaterial({
+          color: color,
+          specular: 0xa0a0a0,
+        });
+        var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.copy(floorPosition);
+        sphere.position.y += radius;
+        return sphere;
+      }
+      var guiParams = {
+        ambientOn: true,
+        directionalOn: true,
+        spotlightOn: true,
+        last: null,
+      };
+      var scene = new THREE.Scene();
+      var renderer = new THREE.WebGLRenderer();
+      TW.mainInit(renderer, scene);
+      var bb = {
+        minx: -250,
+        maxx: 250,
+        miny: -250,
+        maxy: 250,
+        minz: -250,
+        maxz: 250,
+      };
+      var spotlightAngle = 30;
+      var sconceHeight = 40;
+      var sconceColor = 0xbdbdad;
+      makeSconce(
+        scene,
+        sconceHeight,
+        spotlightAngle,
+        sconceColor,
+        new THREE.Vector3(-175, +55, -230),
+        "sconce"
+      );
+      var spot1 = scene.getObjectByName("sconce up spot");
+      var spot2 = scene.getObjectByName("sconce down spot");
+      var ball = makeBall(50, 0x9966ff, new THREE.Vector3(-175, -250, -200));
+      ball.name = "ball";
+      scene.add(ball);
+      var directional = new THREE.DirectionalLight(0xffffff, 0.7);
+      directional.position.set(1, 1.5, 2);
+      if (guiParams.directionalOn) {
+        scene.add(directional);
+      }
+      var ambient = new THREE.AmbientLight(0x808080);
+      if (guiParams.ambientOn) {
+        scene.add(ambient);
+      }
+      var roomGeometry = new THREE.BoxGeometry(500, 500, 500);
+      var materialArray = [];
+      var wallColor = 0x3399cc;
+      var ceilingColor = THREE.ColorKeywords.seagreen;
+      var floorColor = 0xffcc99;
+      var faceColors = [
+        wallColor,
+        wallColor,
+        ceilingColor,
+        floorColor,
+        wallColor,
+        wallColor,
+      ];
+      for (var i = 0; i < 6; i++)
+        materialArray.push(
+          new THREE.MeshPhongMaterial({
+            color: faceColors[i],
+            side: THREE.BackSide,
+          })
+        );
+      var roomMaterial = new THREE.MeshFaceMaterial(materialArray);
+      var room = new THREE.Mesh(roomGeometry, roomMaterial);
+      scene.add(room);
+      var state = TW.cameraSetup(renderer, scene, bb);
+      var gui = new dat.GUI();
+      gui.add(guiParams, "ambientOn").onChange(function () {
+        ambient.visible = guiParams.ambientOn;
+        TW.render();
+      });
+      gui.add(guiParams, "directionalOn").onChange(function () {
+        directional.visible = guiParams.directionalOn;
+        TW.render();
+      });
+      gui.add(guiParams, "spotlightOn").onChange(function () {
+        spot1.visible = guiParams.spotlightOn;
+        spot2.visible = guiParams.spotlightOn;
+        TW.render();
+      });
+    </script>
+    <canvas
+      width="1889"
+      height="945"
+      style="width: 1889px; height: 945px"
+    ></canvas>
+    <div class="dg ac">
+      <div class="dg main a" style="width: 245px">
+        <div
+          style="
+            width: 6px;
+            margin-left: -3px;
+            height: 84px;
+            cursor: ew-resize;
+            position: absolute;
+          "
+        ></div>
+        <ul style="height: auto">
+          <li class="cr boolean">
+            <div>
+              <span class="property-name">ambientOn</span>
+              <div class="c"><input type="checkbox" checked="checked" /></div>
+            </div>
+          </li>
+          <li class="cr boolean">
+            <div>
+              <span class="property-name">directionalOn</span>
+              <div class="c"><input type="checkbox" checked="checked" /></div>
+            </div>
+          </li>
+          <li class="cr boolean">
+            <div>
+              <span class="property-name">spotlightOn</span>
+              <div class="c"><input type="checkbox" checked="checked" /></div>
+            </div>
+          </li>
+        </ul>
+        <div class="close-button close-bottom" style="width: 245px">
+          Close Controls
+        </div>
+      </div>
+    </div>
+  </body>
+  <grammarly-desktop-integration
+    data-grammarly-shadow-root="true"
+  ></grammarly-desktop-integration>
+</html>

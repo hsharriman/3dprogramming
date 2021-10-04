@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<!-- saved from url=(0065)https://cs.wellesley.edu/~cs307/assigns-s21/flythrough-start.html -->
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <title>Flythrough</title>
+    <style>
+      canvas {
+        display: block;
+        margin: 10px auto;
+        width: 800px;
+        height: 500px;
+      }
+    </style>
+    <script src="./flythrough_files/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+    <script src="./flythrough_files/OrbitControls-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls.js"
+    </script>
+    <script src="./flythrough_files/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+    </script>
+  </head>
+
+  <body data-new-gr-c-s-check-loaded="14.1031.0" data-gr-ext-installed="">
+    <h2 id="frameNum">Frame 0</h2>
+
+    <script>
+      let frame = 0;
+      let cameraParams = {
+        fov: 90,
+        aspectRatio: 800.0 / 500.0,
+        far: 2000,
+        eyeX: 0,
+        eyeY: 10,
+        eyeZ: 10,
+        atX: 0,
+        atY: 0,
+        atZ: 0,
+      };
+      let camera = new THREE.PerspectiveCamera(
+        cameraParams.fov,
+        cameraParams.aspectRatio,
+        cameraParams.near,
+        cameraParams.far
+      );
+      // create a scene with a barn, 3 fences, and ground
+
+      function updateCamera() {
+        var cp = cameraParams; // just a shorthand for this function
+        // set location
+        camera.position.set(cp.eyeX, cp.eyeY, cp.eyeZ);
+        // Cameras inherit an "up" vector from Object3D.
+        camera.up.set(0, 1, 0);
+        // The lookAt method computes the camera direction and orientation
+        // from its position and up parameters, and the input arguments
+        // specifying the location of the 'at' point
+        console.log(cp.atY, cp.atZ);
+        camera.lookAt(cp.atX, cp.atY, cp.atZ);
+      }
+
+      function makeBarnScene() {
+        // create three fences and add them to the scene
+        fence1 = makeFence(40);
+        fence1.translateX(5);
+        fence2 = fence1.clone();
+        fence2.translateZ(-10);
+        fence3 = makeFence(100);
+        fence3.translateX(9.2);
+        fence3.rotation.y = Math.PI / 2;
+        scene.add(fence1);
+        scene.add(fence2);
+        scene.add(fence3);
+        // create a barn and add it to the scene
+        var barn = new TW.createMesh(TW.createBarn(5, 5, 10));
+        scene.add(barn);
+        // create the ground plane and add it to the scene
+        var gc = THREE.ColorKeywords.darkgreen;
+        var ground = new THREE.Mesh(
+          new THREE.PlaneGeometry(20, 20),
+          new THREE.MeshBasicMaterial({ color: gc })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+      }
+
+      function makeFence(numPickets) {
+        // makes a fence with the left end at the origin and proceeding
+        // down the x axis. The pickets are made from barn objects, scaled
+        // to be unit height (at the shoulder) and very thin
+        var fence = new THREE.Object3D();
+        var picketG = TW.createBarn(0.09, 1, 0.1);
+        var picket = new THREE.Mesh(picketG, new THREE.MeshNormalMaterial());
+        for (var i = 0; i < numPickets; ++i) {
+          picket = picket.clone();
+          picket.translateX(0.1);
+          fence.add(picket);
+        }
+        return fence;
+      }
+
+      // create a scene object
+      var scene = new THREE.Scene();
+
+      // add the barn scene
+      makeBarnScene();
+
+      // create a renderer
+      var renderer = new THREE.WebGLRenderer();
+
+      TW.mainInit(renderer, scene);
+
+      updateCamera();
+
+      const nextFrame = () => {
+        // set frame number
+        frame++;
+        if (frame > 10) {
+          cameraParams.atY = -1;
+          frame = 0;
+        }
+        document.getElementById("frameNum").innerHTML = `Frame ${frame}`;
+        cameraParams.atY = cameraParams.atY + 2;
+        cameraParams.atZ = cameraParams.atZ - 2;
+
+        updateCamera();
+        renderer.render(scene, camera);
+      };
+
+      renderer.render(scene, camera);
+
+      TW.setKeyboardCallback("n", nextFrame, "next frame");
+    </script>
+    <canvas
+      width="800"
+      height="500"
+      style="width: 800px; height: 500px"
+    ></canvas>
+  </body>
+  <grammarly-desktop-integration
+    data-grammarly-shadow-root="true"
+  ></grammarly-desktop-integration>
+</html>
