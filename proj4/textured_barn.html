@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Textured Barn</title>
+    <style>
+      /* feel free to style the canvas any way you want. If you want it to
+      use the entire window, set width: 100% and height: 100%. */
+      canvas {
+        display: block;
+        margin: 10px auto;
+        width: 80%;
+        height: 500px;
+      }
+    </style>
+
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+    <script
+      src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js"
+    >
+      "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+    </script>
+  </head>
+
+  <body>
+    <h1>Textured Barn</h1>
+
+    <script>
+      // global parameters for barn
+
+      var params = {
+        barnWidth: 20,
+        barnHeight: 10,
+        barnDepth: 50,
+      };
+
+      var barnMesh;
+
+      // create the scene, renderer, and camera
+
+      var scene = new THREE.Scene();
+
+      var renderer = new THREE.WebGLRenderer();
+
+      TW.mainInit(renderer, scene);
+
+      TW.cameraSetup(renderer, scene, {
+        minx: 0,
+        maxx: params.barnWidth,
+        miny: 0,
+        maxy: params.barnHeight,
+        minz: -params.barnDepth,
+        maxz: 0,
+      });
+
+      // adds texture coordinates to all the barn vertices
+
+      function addTextureCoords(barnGeom) {
+        if (!barnGeom instanceof THREE.Geometry) {
+          throw "not a THREE.Geometry: " + barnGeom;
+        }
+        // array of face descriptors
+        var UVs = [];
+        function faceCoords(as, at, bs, bt, cs, ct) {
+          UVs.push([
+            new THREE.Vector2(as, at),
+            new THREE.Vector2(bs, bt),
+            new THREE.Vector2(cs, ct),
+          ]);
+        }
+        // front (faces 0-2)
+        faceCoords(0, 0, 1, 0, 1, 1);
+        faceCoords(0, 0, 1, 1, 0, 1);
+        faceCoords(0, 1, 1, 1, 1, 1); // upper triangle
+        // back (faces 3-5)
+        faceCoords(1, 0, 0, 1, 0, 0);
+        faceCoords(1, 0, 1, 1, 0, 1);
+        faceCoords(0, 1, 1, 1, 1, 1); // upper triangle
+        // roof (faces 6-9)
+        faceCoords(1, 0, 1, 1, 0, 0);
+        faceCoords(1, 1, 0, 1, 0, 0);
+        faceCoords(0, 0, 1, 0, 1, 1);
+        faceCoords(0, 1, 0, 0, 1, 1);
+        // sides (faces 10-13)
+        faceCoords(1, 0, 0, 1, 0, 0);
+        faceCoords(1, 1, 0, 1, 1, 0);
+        faceCoords(1, 0, 1, 1, 0, 0);
+        faceCoords(1, 1, 0, 1, 0, 0);
+        // floor (faces 14-15)
+        faceCoords(0, 0, 1, 0, 0, 1);
+        faceCoords(1, 0, 1, 1, 0, 1);
+
+        // attach this to the geometry
+        barnGeom.faceVertexUvs = [UVs];
+      }
+
+      // makes a minimal grayscale barn and adds it to the scene
+
+      function makeBasicBarn() {
+        var barnGeom = TW.createBarn(
+          params.barnWidth,
+          params.barnHeight,
+          params.barnDepth
+        );
+        var barnMat = new THREE.MeshPhongMaterial({ color: 0xdddddd });
+        barnMesh = new THREE.Mesh(barnGeom, barnMat);
+        scene.add(barnMesh);
+      }
+
+      makeBasicBarn();
+
+      // create ambient light and add to the scene
+
+      var ambLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambLight);
+
+      // render the scene
+
+      TW.render();
+    </script>
+  </body>
+</html>
