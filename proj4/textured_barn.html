@@ -77,31 +77,43 @@
             new THREE.Vector2(cs, ct),
           ]);
         }
-        // front (faces 0-2)
+        // front
         faceCoords(0, 0, 1, 0, 1, 1);
         faceCoords(0, 0, 1, 1, 0, 1);
-        faceCoords(0, 1, 1, 1, 1, 1); // upper triangle
-        // back (faces 3-5)
+        faceCoords(1, 0, 0, 0, 0, 1); // special for the upper triangle
+        // back.  Vertices are not quite analogous to the front, alas
         faceCoords(1, 0, 0, 1, 0, 0);
         faceCoords(1, 0, 1, 1, 0, 1);
-        faceCoords(0, 1, 1, 1, 1, 1); // upper triangle
-        // roof (faces 6-9)
+        faceCoords(0, 1, 1, 1, 1, 0); // special for upper triangle
+        //roof
         faceCoords(1, 0, 1, 1, 0, 0);
         faceCoords(1, 1, 0, 1, 0, 0);
         faceCoords(0, 0, 1, 0, 1, 1);
         faceCoords(0, 1, 0, 0, 1, 1);
-        // sides (faces 10-13)
+        // sides
         faceCoords(1, 0, 0, 1, 0, 0);
         faceCoords(1, 1, 0, 1, 1, 0);
         faceCoords(1, 0, 1, 1, 0, 0);
         faceCoords(1, 1, 0, 1, 0, 0);
-        // floor (faces 14-15)
+        // floor
         faceCoords(0, 0, 1, 0, 0, 1);
         faceCoords(1, 0, 1, 1, 0, 1);
-
-        // attach this to the geometry
+        // Finally, attach this to the geometry
         barnGeom.faceVertexUvs = [UVs];
       }
+
+      const addMaterials = (barnGeom) => {
+        if (!barnGeom instanceof THREE.Geometry) {
+          throw "not a THREE.Geometry: " + geom;
+        }
+        for (let i = 0; i < barnGeom.faces.length; i++) {
+          if (6 <= i && i <= 9) {
+            barnGeom.faces[i].materialIndex = 1;
+          } else {
+            barnGeom.faces[i].materialIndex = 0;
+          }
+        }
+      };
 
       // makes a minimal grayscale barn and adds it to the scene
 
@@ -111,17 +123,35 @@
           params.barnHeight,
           params.barnDepth
         );
-        var barnMat = new THREE.MeshPhongMaterial({ color: 0xdddddd });
-        barnMesh = new THREE.Mesh(barnGeom, barnMat);
-        scene.add(barnMesh);
+        var roof = "roof.jpg";
+        var side = "side.jpg";
+        TW.loadTextures([roof, side], (textures) => {
+          var roofMaterial = new THREE.MeshPhongMaterial();
+          roofMaterial.map = textures[0];
+          var sideMaterial = new THREE.MeshPhongMaterial();
+          sideMaterial.map = textures[1];
+          var barnMat = new THREE.MeshFaceMaterial([
+            sideMaterial,
+            roofMaterial,
+          ]);
+          addMaterials(barnGeom);
+          addTextureCoords(barnGeom);
+          barnMesh = new THREE.Mesh(barnGeom, barnMat);
+          scene.add(barnMesh);
+          TW.render();
+        });
       }
 
       makeBasicBarn();
 
       // create ambient light and add to the scene
 
+      // var ambLight = new THREE.AmbientLight(0x808080);
       var ambLight = new THREE.AmbientLight(0x808080);
       scene.add(ambLight);
+      var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+      directionalLight.position.set(1, 1.5, 2);
+      scene.add(directionalLight);
 
       // render the scene
 
