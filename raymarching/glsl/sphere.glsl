@@ -55,10 +55,20 @@ vec2 sphere( vec3 p, float radius )
 }
 
 
+const int steps = 80;
+
+vec2 field( vec3 position )
+{
+    vec2 sph = sphere( position, 5. );
+    return sph;
+}
+
 /////////////////////////////////////////////////////////////////////////
 
+// the methods below this need the field function
 
-const int steps = 80;
+/////////////////////////////////////////////////////////////////////////
+
 
 //the actual raymarching from:
 //https://github.com/stackgl/glsl-raytrace/blob/master/index.glsl
@@ -73,7 +83,7 @@ vec2 raymarching( vec3 rayOrigin, vec3 rayDir, float maxd, float precis ) {
 
         if (latest < precis || dist > maxd) break;
 
-        vec2 result = sphere( rayOrigin + rayDir * dist, 5. );
+        vec2 result = field( rayOrigin + rayDir * dist );
         latest = result.x;
         type   = result.y;
         dist  += latest;
