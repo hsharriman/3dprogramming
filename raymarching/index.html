@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, shrink-to-fit=0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <title></title>
+    <style>
+      head,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+  </head>
+  <body></body>
+  <script>
+    var tl = new THREE.TextureLoader();
+    var cl = new THREE.CubeTextureLoader();
+    var rc = new THREE.Raycaster();
+    var mouse = new THREE.Vector2();
+    class RayMarcher {
+      constructor(distance, precision) {
+        this.distance = distance || 50;
+        this.precision = precision || 0.01;
+
+        //scene setup
+
+        this.scene = new THREE.Scene();
+
+        this.renderer = new THREE.WebGLRenderer();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.domElement = this.renderer.domElement;
+
+        //used only to render the scene
+
+        this.renderCamera = new THREE.OrthographicCamera(
+          -1,
+          1,
+          1,
+          -1,
+          1 / Math.pow(2, 53),
+          1
+        );
+
+        //geometry setup
+
+        this.geom = new THREE.BufferGeometry();
+        this.geom.addAttribute(
+          "position",
+          new THREE.BufferAttribute(
+            new Float32Array([
+              -1, -1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, 1, 0, -1, 1, 0,
+            ]),
+            3
+          )
+        );
+        this.mesh = new THREE.Mesh(this.geom, null);
+        this.scene.add(this.mesh);
+
+        //some helpers
+
+        this.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1);
+        this.target = new THREE.Vector3();
+      }
+
+      loadFragmentShader(fragmentUrl, callback) {
+        this.loaded = false;
+
+        var scope = this;
+        var req = new XMLHttpRequest();
+        req.open("GET", fragmentUrl);
+        req.onload = function (e) {
+          scope.setFragmentShader(e.target.responseText, callback);
+        };
+        req.send();
+        return this;
+      }
+
+      setFragmentShader(fs, cb) {
+        this.startTime = Date.now();
+        this.mesh.material = this.material = new THREE.ShaderMaterial({
+          uniforms: {
+            resolution: {
+              type: "v2",
+              value: new THREE.Vector2(this.width, this.height),
+            },
+            time: { type: "f", value: 0 },
+            randomSeed: { type: "f", value: Math.random() },
+            fov: { type: "f", value: 45 },
+            camera: { type: "v3", value: this.camera.position },
+            target: { type: "v3", value: this.target },
+            raymarchMaximumDistance: { type: "f", value: this.distance },
+            raymarchPrecision: { type: "f", value: this.precision },
+          },
+          vertexShader: "void main() {gl_Position =  vec4( position, 1.0 );}",
+          fragmentShader: fs,
+          transparent: true,
+        });
+        this.update();
+
+        if (cb != null) cb(this);
+        this.loaded = true;
+        return this;
+      }
+
+      setTexture(name, url) {
+        if (this.material == null) {
+          throw new Error(
+            "material not initialised, use setFragmentShader() first."
+          );
+        }
+        rm.loaded = false;
+
+        var scope = this;
+        this.material.uniforms[name] = { type: "t", value: null };
+        tl.load(url, function (texture) {
+          scope.material.uniforms[name].value = texture;
+          scope.material.needsUpdate = true;
+          scope.loaded = true;
+          texture.needsUpdate = true;
+        });
+        return this;
+      }
+
+      setCubemap(name, urls) {
+        if (this.material == null) {
+          throw new Error(
+            "material not initialised, use setFragmentShader() first."
+          );
+        }
+        rm.loaded = false;
+
+        var scope = this;
+        this.material.uniforms[name] = { type: "t", value: null };
+        cl.load(urls, function (texture) {
+          scope.material.uniforms[name].value = texture;
+          scope.material.needsUpdate = true;
+          scope.loaded = true;
+          texture.needsUpdate = true;
+        });
+      }
+
+      setUniform(name, type, value) {
+        if (this.material == null) {
+          throw new Error(
+            "material not initialised, use setFragmentShader() first."
+          );
+        }
+
+        this.material.uniforms[name] = { type: type, value: value };
+        return this;
+      }
+
+      getUniform(name) {
+        if (this.material == null) {
+          console.warn(
+            "raymarcher.getUniform: material not initialised, use setFragmentShader() first."
+          );
+          return null;
+        }
+
+        return this.material.uniforms[name];
+      }
+
+      setSize(width, height) {
+        this.width = width;
+        this.height = height;
+
+        this.renderer.setSize(width, height);
+
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+
+        if (this.material != null) {
+          this.material.uniforms.resolution.value.x = width;
+          this.material.uniforms.resolution.value.y = height;
+        }
+        return this;
+      }
+
+      update() {
+        if (this.material == null) return;
+
+        this.material.uniforms.time.value =
+          (Date.now() - this.startTime) * 0.001;
+        this.material.uniforms.randomSeed.value = Math.random();
+
+        this.material.uniforms.fov.value = (this.camera.fov * Math.PI) / 180;
+
+        this.material.uniforms.raymarchMaximumDistance.value = this.distance;
+        this.material.uniforms.raymarchPrecision.value = this.precision;
+
+        this.material.uniforms.camera.value = this.camera.position;
+
+        this.material.uniforms.target.value = this.target;
+        this.camera.lookAt(this.target);
+      }
+
+      render() {
+        if (this.loaded) {
+          this.update();
+          this.renderer.render(this.scene, this.renderCamera);
+        }
+      }
+    }
+
+    var rm;
+    var composer;
+    function init() {
+      var w = window.innerWidth;
+      var h = window.innerHeight;
+
+      rm = new RayMarcher()
+        .setSize(w, h)
+        .loadFragmentShader("glsl/sphere.glsl", animate);
+      document.body.appendChild(rm.domElement);
+
+      composer = new Composer(rm);
+      composer.setSize(w, h);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      rm.update();
+      rm.render();
+      if (rm.loaded) composer.render();
+    }
+    init();
+  </script>
+</html>
