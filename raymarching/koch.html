@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, shrink-to-fit=0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <title></title>
+    <style>
+      head,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 0;
+      }
+      #draw-shapes {
+        width: 1400px;
+        height: 900px;
+        /* background-color: black; */
+      }
+    </style>
+    <script src="./two.js"></script>
+  </head>
+  <body>
+    <canvas id="draw-shapes"></canvas>
+  </body>
+  <script>
+    const pt = { x: 0, y: 0 };
+    const rot = (pt, deg) => {
+      let angle = (deg * Math.PI) / 180;
+      let newX = pt.x * Math.cos(angle) - pt.y * Math.sin(angle);
+      let newY = pt.x * Math.sin(angle) + pt.y * Math.cos(angle);
+      return { x: newX, y: newY };
+    };
+    const scale = (pt, scaling) => {
+      return pt.x * scaling, pt.y * scaling;
+    };
+    const mag = (pt) => {
+      return Math.sqrt(Math.pow(pt.x, 2) + Math.pow(pt.y, 2));
+    };
+    const sub = (pt2, pt1) => {
+      return { x: pt2.x - pt1.x, y: pt2.y - pt1.y };
+    };
+    const add = (pt2, pt1) => {
+      return { x: pt2.x + pt1.x, y: pt2.y + pt1.y };
+    };
+    const div = (pt, val) => {
+      return { x: pt.x / val, y: pt.y / val };
+    };
+    const addLine = (pt1, pt2) => {
+      var line = new Two.Line(pt1.x, pt1.y, pt2.x, pt2.y);
+      console.log(pt1.x, pt1.y, pt2.x, pt2.y);
+      line.stroke = "white";
+      line.linewidth = 2;
+      two.update();
+    };
+    const koch = (pt, vec, numIterations) => {
+      if (numIterations === 0) {
+        // some minimum value
+        addLine(pt, add(vec, pt));
+        return; // TODO something
+      }
+      numIterations--;
+      pt = add(pt, vec);
+      vec = rot(vec, 30);
+      koch(pt, div(vec, 3), numIterations);
+      // move forward
+      //turn right 60 degrees
+      pt = add(pt, vec);
+      vec = rot(vec, -60);
+      koch(pt, div(vec, 3), numIterations);
+      // move forward
+      // turn left 30 degrees
+      pt = add(pt, vec);
+      vec = rot(vec, 30);
+      koch(pt, div(vec, 3), numIterations);
+    };
+
+    var elem = document.getElementById("draw-shapes");
+    var two = new Two({ fullscreen: true }).appendTo(elem);
+    // koch({ x: 0, y: 0 }, { x: 300, y: 300 }, 1);
+
+    // two has convenience methods to create shapes.
+    var circle = two.makeCircle(72, 100, 50);
+    var rect = two.makeRectangle(213, 100, 100, 100);
+
+    // The object returned has many stylable properties:
+    circle.fill = "#FF8000";
+    circle.stroke = "orangered"; // Accepts all valid css color
+    circle.linewidth = 5;
+
+    rect.fill = "rgb(0, 200, 255)";
+    rect.opacity = 0.75;
+    rect.noStroke();
+
+    // Don't forget to tell two to render everything
+    // to the screen
+    two.update();
+  </script>
+  <!-- <script>
+    // Make an instance of two and place it on the page.
+    var elem = document.getElementById("draw-shapes");
+    var params = { width: 285, height: 200 };
+    var two = new Two(params).appendTo(elem);
+
+    // two has convenience methods to create shapes.
+    var circle = two.makeCircle(72, 100, 50);
+    var rect = two.makeRectangle(213, 100, 100, 100);
+
+    // The object returned has many stylable properties:
+    circle.fill = "#FF8000";
+    circle.stroke = "orangered"; // Accepts all valid css color
+    circle.linewidth = 5;
+
+    rect.fill = "rgb(0, 200, 255)";
+    rect.opacity = 0.75;
+    rect.noStroke();
+
+    // Don't forget to tell two to render everything
+    // to the screen
+    two.update();
+  </script> -->
+</html>
