@@ -42,8 +42,8 @@
   <script>
     let default_params = {
       sideLength: 150,
-      iterations: 4,
-      anti: true,
+      iterations: 5,
+      anti: false,
     };
 
     var scene = new THREE.Scene();
@@ -72,7 +72,7 @@
     };
 
     const koch = (pt, moveTo, iterations) => {
-      if (iterations === 0) {
+      if (iterations === 1) {
         let newPt = moveTo.clone().add(pt).round();
         points.push(newPt);
         return newPt;
@@ -96,7 +96,8 @@
     const snowflake = (start, sideLen, iterations, anti) => {
       let moveTo = sideLen;
       let pt = start;
-      for (let i = 0; i < iterations; i++) {
+      let sides = iterations <= 2 ? 3 : iterations; // make sure that the low-iterations are still closed polygons
+      for (let i = 0; i < sides; i++) {
         pt = koch(pt, moveTo, iterations);
         if (anti) {
           moveTo = left(moveTo, 120);
