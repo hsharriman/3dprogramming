@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, shrink-to-fit=0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <title></title>
+    <style>
+      head,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 0;
+      }
+      canvas {
+        display: block;
+        margin: 10px auto;
+        width: 800px;
+        height: 800px;
+      }
+      #draw-shapes {
+        width: 1400px;
+        height: 900px;
+        /* background-color: black; */
+      }
+    </style>
+    <script src="./two.js"></script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+    </script>
+  </head>
+  <body>
+    <h1>Koch Snowflake</h1>
+    <!-- <canvas id="draw-shapes"></canvas> -->
+  </body>
+  <script>
+    var scene = new THREE.Scene();
+
+    var renderer = new THREE.WebGLRenderer();
+    const origin = new THREE.Vector2(0, 0);
+    const points = [];
+
+    TW.mainInit(renderer, scene);
+    TW.cameraSetup(renderer, scene, {
+      minx: -30,
+      maxx: 100,
+      miny: -30,
+      maxy: 100,
+      minz: 0,
+      maxz: 0,
+    });
+
+    // const div = (pt, val) => {
+    //   return { x: pt.x / val, y: pt.y / val };
+    // };
+
+    // const koch = (pt, moveTo, numIterations) => {
+    //   // track position, accumulated rotation, and specific side length
+    //   moveTo = moveTo.clone().divideScalar(3);
+    //   console.log(pt, moveTo, numIterations);
+    //   points.map((p) => console.log(p.x, p.y));
+
+    //   if (numIterations < 1) {
+    //     // some minimum value
+    //     // addLine(pt, add(vec, pt));
+    //     // console.log("adding a point", pt);
+    //     points.push(pt.clone().round());
+    //     // ptArray.map((pt) => console.log(pt.x, pt.y));
+    //     // TODO something
+    //     return;
+    //   }
+    //   numIterations--;
+
+    //   // move forwards
+    //   koch(pt.add(moveTo), moveTo, numIterations);
+    //   // turn left 30 degrees and move forwards
+    //   moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
+    //   koch(pt.add(moveTo), moveTo, numIterations);
+    //   //turn right 60 degrees and move forwards
+    //   moveTo = moveTo.clone().rotateAround(origin, -Math.PI / 3);
+    //   koch(pt.add(moveTo), moveTo, numIterations);
+    //   // turn left 30 degrees and move forwards
+    //   moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
+    //   koch(pt.add(moveTo), moveTo, numIterations);
+    // };
+
+    const koch = (pt, moveTo, iterations) => {
+      // track position, accumulated rotation, and specific side length
+      console.log(pt, moveTo.length(), moveTo, iterations);
+      points.map((p) => console.log(p.x, p.y));
+
+      if (iterations === 1) {
+        // some minimum value
+        // addLine(pt, add(vec, pt));
+        // console.log("adding a point", pt);
+        let newPt = moveTo.clone().add(pt).round();
+        points.push(newPt);
+        // ptArray.map((pt) => console.log(pt.x, pt.y));
+        // TODO something
+        return newPt;
+      }
+      moveTo = moveTo.clone().divideScalar(3);
+      iterations--;
+      // move forwards
+      pt = koch(pt, moveTo, iterations);
+      // turn left 30 degrees and move forwards
+      moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
+      pt = koch(pt, moveTo, iterations);
+      //turn right 60 degrees and move forwards
+      moveTo = moveTo.clone().rotateAround(origin, -Math.PI / 3);
+      pt = koch(pt, moveTo, iterations);
+      // turn left 30 degrees and move forwards
+      moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
+      pt = koch(pt, moveTo, iterations);
+      return pt;
+    };
+
+    const snowflake = (start, sideLen, iterations) => {
+      let moveTo = sideLen;
+      let pt = start;
+      for (let i = 0; i < iterations; i++) {
+        pt = koch(pt, moveTo, iterations);
+        moveTo.clone().rotateAround(origin, (2 * Math.PI) / 3);
+      }
+    };
+
+    // const koch = (pos, len, rot, numIterations) => {
+    //   // track position, accumulated rotation, and specific side length
+    //   len;
+    //   console.log(pt, moveTo, numIterations);
+    //   points.map((p) => console.log(p.x, p.y));
+
+    //   if (numIterations < 1) {
+    //     // some minimum value
+    //     // addLine(pt, add(vec, pt));
+    //     // console.log("adding a point", pt);
+    //     points.push(pt.clone().round());
+    //     // ptArray.map((pt) => console.log(pt.x, pt.y));
+    //     // TODO something
+    //     return;
+    //   }
+    //   numIterations--;
+
+    //   // move forwards
+    //   koch(pt.add(moveTo), moveTo, numIterations);
+    //   // turn left 30 degrees and move forwards
+    //   moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
+    //   koch(pt.add(moveTo), moveTo, numIterations);
+    //   //turn right 60 degrees and move forwards
+    //   moveTo = moveTo.clone().rotateAround(origin, -Math.PI / 3);
+    //   koch(pt.add(moveTo), moveTo, numIterations);
+    //   // turn left 30 degrees and move forwards
+    //   moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
+    //   koch(pt.add(moveTo), moveTo, numIterations);
+    // };
+
+    const material = new THREE.LineBasicMaterial({
+      color: 0x0000ff,
+    });
+
+    const firstPt = new THREE.Vector2(0, 0);
+    points.push(firstPt.clone().round());
+    // koch(firstPt, new THREE.Vector2(50, 0), 4);
+    snowflake(firstPt, new THREE.Vector2(50, 0), 4);
+    // console.log(points);
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+    const line = new THREE.Line(geometry, material);
+    scene.add(line);
+    TW.render();
+  </script>
+</html>
