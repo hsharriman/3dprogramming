@@ -24,11 +24,6 @@
         width: 800px;
         height: 800px;
       }
-      #draw-shapes {
-        width: 1400px;
-        height: 900px;
-        /* background-color: black; */
-      }
     </style>
     <script src="./two.js"></script>
     <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
@@ -37,75 +32,49 @@
     <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
       "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
     </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+    </script>
   </head>
   <body>
-    <h1>Koch Snowflake</h1>
-    <!-- <canvas id="draw-shapes"></canvas> -->
+    <h1>Koch Snowflakes</h1>
   </body>
   <script>
+    let default_params = {
+      sideLength: 150,
+      iterations: 4,
+      anti: true,
+    };
+
     var scene = new THREE.Scene();
 
     var renderer = new THREE.WebGLRenderer();
-    const origin = new THREE.Vector2(0, 0);
-    const points = [];
+    let points = [];
 
     TW.mainInit(renderer, scene);
-    TW.cameraSetup(renderer, scene, {
-      minx: -30,
-      maxx: 100,
-      miny: -30,
-      maxy: 100,
+    let state = TW.cameraSetup(renderer, scene, {
+      minx: 0,
+      maxx: 150,
+      miny: 0,
+      maxy: 150,
       minz: 0,
       maxz: 0,
     });
 
-    // const div = (pt, val) => {
-    //   return { x: pt.x / val, y: pt.y / val };
-    // };
+    const left = (vec, deg) => {
+      const origin = new THREE.Vector2(0, 0);
+      return vec.clone().rotateAround(origin, (deg * Math.PI) / 180);
+    };
 
-    // const koch = (pt, moveTo, numIterations) => {
-    //   // track position, accumulated rotation, and specific side length
-    //   moveTo = moveTo.clone().divideScalar(3);
-    //   console.log(pt, moveTo, numIterations);
-    //   points.map((p) => console.log(p.x, p.y));
-
-    //   if (numIterations < 1) {
-    //     // some minimum value
-    //     // addLine(pt, add(vec, pt));
-    //     // console.log("adding a point", pt);
-    //     points.push(pt.clone().round());
-    //     // ptArray.map((pt) => console.log(pt.x, pt.y));
-    //     // TODO something
-    //     return;
-    //   }
-    //   numIterations--;
-
-    //   // move forwards
-    //   koch(pt.add(moveTo), moveTo, numIterations);
-    //   // turn left 30 degrees and move forwards
-    //   moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
-    //   koch(pt.add(moveTo), moveTo, numIterations);
-    //   //turn right 60 degrees and move forwards
-    //   moveTo = moveTo.clone().rotateAround(origin, -Math.PI / 3);
-    //   koch(pt.add(moveTo), moveTo, numIterations);
-    //   // turn left 30 degrees and move forwards
-    //   moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
-    //   koch(pt.add(moveTo), moveTo, numIterations);
-    // };
+    const right = (vec, deg) => {
+      const origin = new THREE.Vector2(0, 0);
+      return vec.clone().rotateAround(origin, (-deg * Math.PI) / 180);
+    };
 
     const koch = (pt, moveTo, iterations) => {
-      // track position, accumulated rotation, and specific side length
-      console.log(pt, moveTo.length(), moveTo, iterations);
-      points.map((p) => console.log(p.x, p.y));
-
-      if (iterations === 1) {
-        // some minimum value
-        // addLine(pt, add(vec, pt));
-        // console.log("adding a point", pt);
+      if (iterations === 0) {
         let newPt = moveTo.clone().add(pt).round();
         points.push(newPt);
-        // ptArray.map((pt) => console.log(pt.x, pt.y));
-        // TODO something
         return newPt;
       }
       moveTo = moveTo.clone().divideScalar(3);
@@ -113,69 +82,65 @@
       // move forwards
       pt = koch(pt, moveTo, iterations);
       // turn left 30 degrees and move forwards
-      moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
+      moveTo = left(moveTo, 60);
       pt = koch(pt, moveTo, iterations);
       //turn right 60 degrees and move forwards
-      moveTo = moveTo.clone().rotateAround(origin, -Math.PI / 3);
+      moveTo = right(moveTo, 120);
       pt = koch(pt, moveTo, iterations);
       // turn left 30 degrees and move forwards
-      moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
+      moveTo = left(moveTo, 60);
       pt = koch(pt, moveTo, iterations);
       return pt;
     };
 
-    const snowflake = (start, sideLen, iterations) => {
+    const snowflake = (start, sideLen, iterations, anti) => {
       let moveTo = sideLen;
       let pt = start;
       for (let i = 0; i < iterations; i++) {
         pt = koch(pt, moveTo, iterations);
-        moveTo.clone().rotateAround(origin, (2 * Math.PI) / 3);
+        if (anti) {
+          moveTo = left(moveTo, 120);
+        } else {
+          moveTo = right(moveTo, 120);
+        }
       }
     };
 
-    // const koch = (pos, len, rot, numIterations) => {
-    //   // track position, accumulated rotation, and specific side length
-    //   len;
-    //   console.log(pt, moveTo, numIterations);
-    //   points.map((p) => console.log(p.x, p.y));
+    const makeSnowflake = (params) => {
+      const material = new THREE.LineBasicMaterial({
+        color: 0x0000ff,
+      });
 
-    //   if (numIterations < 1) {
-    //     // some minimum value
-    //     // addLine(pt, add(vec, pt));
-    //     // console.log("adding a point", pt);
-    //     points.push(pt.clone().round());
-    //     // ptArray.map((pt) => console.log(pt.x, pt.y));
-    //     // TODO something
-    //     return;
-    //   }
-    //   numIterations--;
+      let firstPt = new THREE.Vector2(0, 0);
+      if (!params.anti) {
+        firstPt = new THREE.Vector2(0, 120);
+      }
+      points.push(firstPt.clone());
+      snowflake(
+        firstPt,
+        new THREE.Vector2(params.sideLength, 0),
+        params.iterations,
+        params.anti
+      );
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
-    //   // move forwards
-    //   koch(pt.add(moveTo), moveTo, numIterations);
-    //   // turn left 30 degrees and move forwards
-    //   moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
-    //   koch(pt.add(moveTo), moveTo, numIterations);
-    //   //turn right 60 degrees and move forwards
-    //   moveTo = moveTo.clone().rotateAround(origin, -Math.PI / 3);
-    //   koch(pt.add(moveTo), moveTo, numIterations);
-    //   // turn left 30 degrees and move forwards
-    //   moveTo = moveTo.clone().rotateAround(origin, Math.PI / 6);
-    //   koch(pt.add(moveTo), moveTo, numIterations);
-    // };
+      return new THREE.Line(geometry, material);
+    };
 
-    const material = new THREE.LineBasicMaterial({
-      color: 0x0000ff,
-    });
+    let flake = makeSnowflake(default_params);
+    scene.add(flake);
+    state.render();
 
-    const firstPt = new THREE.Vector2(0, 0);
-    points.push(firstPt.clone().round());
-    // koch(firstPt, new THREE.Vector2(50, 0), 4);
-    snowflake(firstPt, new THREE.Vector2(50, 0), 4);
-    // console.log(points);
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    function rebuild() {
+      scene.remove(flake);
+      flake = makeSnowflake(default_params);
+      scene.add(flake);
+      state.render();
+    }
 
-    const line = new THREE.Line(geometry, material);
-    scene.add(line);
-    TW.render();
+    // set up sliders to control the dimensions of the box
+    // var gui = new dat.GUI();
+    // gui.add(default_params, "sideLength", 50, 120).onChange(rebuild);
+    // gui.add(default_params, "iterations", 1, 7).onChange(rebuild);
   </script>
 </html>
