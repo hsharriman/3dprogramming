@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, shrink-to-fit=0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <title></title>
+    <style>
+      head,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 0;
+      }
+      canvas {
+        display: block;
+        margin: 10px auto;
+        width: 800px;
+        height: 800px;
+      }
+    </style>
+    <script src="./two.js"></script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+    </script>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+    </script>
+  </head>
+  <body>
+    <h1>2D Sierpinski</h1>
+  </body>
+  <script>
+    let default_params = {
+      sideLength: 250,
+      iterations: 8,
+    };
+
+    var scene = new THREE.Scene();
+
+    var renderer = new THREE.WebGLRenderer();
+    let points = [];
+
+    TW.mainInit(renderer, scene);
+    let state = TW.cameraSetup(renderer, scene, {
+      minx: -250,
+      maxx: 0,
+      miny: 0,
+      maxy: 150,
+      minz: 0,
+      maxz: 0,
+    });
+
+    class Turtle {
+      constructor(pt = { x: 0, y: 0 }, dir = { x: 1, y: 0 }) {
+        this.pt = new THREE.Vector2(pt.x, pt.y);
+        this.dir = new THREE.Vector2(dir.x, dir.y);
+        this._origin = new THREE.Vector2(0, 0);
+        this.points = [this.pt.clone()];
+      }
+      _getPt() {
+        return this.pt.clone();
+      }
+      _setPt(pt) {
+        this.pt = pt.clone();
+      }
+      _getDir() {
+        return this.dir.clone();
+      }
+      _setDir(dir) {
+        this.dir = dir.clone();
+      }
+      deg2rad(deg) {
+        return (deg * Math.PI) / 180;
+      }
+      _scale(length) {
+        const scaledDir = this._getDir().setLength(length);
+        this._setDir(scaledDir);
+      }
+      _addPt() {
+        this._setPt(this._getPt().add(this._getDir()));
+        this.points.push(this._getPt());
+      }
+      l(deg) {
+        const newDir = this._getDir().rotateAround(
+          this._origin,
+          this.deg2rad(deg)
+        );
+        this._setDir(newDir);
+        return this;
+      }
+      r(deg) {
+        const newDir = this._getDir().rotateAround(
+          this._origin,
+          this.deg2rad(-deg)
+        );
+        this._setDir(newDir);
+        return this;
+      }
+      fwd(dist) {
+        this._scale(dist);
+        this._addPt();
+        return this;
+      }
+    }
+
+    const triangle = (tr, length) => {
+      for (let i = 0; i < 3; i++) {
+        tr.l(120).fwd(length);
+      }
+      return tr;
+    };
+
+    const sierpinski = (tr, length, n) => {
+      if (n === 1) {
+        return triangle(tr, length);
+      }
+      tr = sierpinski(tr, length / 2, n - 1);
+      tr.l(120).fwd(length);
+
+      tr = sierpinski(tr, length / 2, n - 1);
+      tr.l(120).fwd(length);
+
+      tr = sierpinski(tr, length / 2, n - 1);
+      tr.l(120).fwd(length);
+      return tr;
+    };
+
+    const makeSierpinski = (params) => {
+      const material = new THREE.LineBasicMaterial({
+        color: 0x0000ff,
+      });
+
+      const tr = new Turtle();
+      sierpinski(tr, params.sideLength, params.iterations);
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(tr.points);
+
+      return new THREE.Line(geometry, material);
+    };
+
+    let sierp = makeSierpinski(default_params);
+    scene.add(sierp);
+    state.render();
+
+    function rebuild() {
+      scene.remove(sierp);
+      sierp = makeSierpinski(default_params);
+      scene.add(sierp);
+      state.render();
+    }
+
+    // set up sliders to control the dimensions of the box
+    // var gui = new dat.GUI();
+    // gui.add(default_params, "sideLength", 50, 120).onChange(rebuild);
+    // gui.add(default_params, "iterations", 1, 7).onChange(rebuild);
+  </script>
+</html>
