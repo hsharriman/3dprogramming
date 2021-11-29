@@ -25,7 +25,6 @@
         height: 800px;
       }
     </style>
-    <script src="./two.js"></script>
     <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
       "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
     </script>
@@ -160,8 +159,7 @@
     }
 
     // set up sliders to control the dimensions of the box
-    // var gui = new dat.GUI();
-    // gui.add(default_params, "sideLength", 50, 120).onChange(rebuild);
-    // gui.add(default_params, "iterations", 1, 7).onChange(rebuild);
+    var gui = new dat.GUI();
+    gui.add(default_params, "iterations", 1, 8).onChange(rebuild);
   </script>
 </html>
